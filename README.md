@@ -6,6 +6,8 @@ This project replaces a lost IR remote for an LED light strip with a modern, sma
 
 - **Smart LED Control**: Adjust the brightness and color of your LED strip via your phone.
 - **Flask Web Interface**: A lightweight web server hosted on the Raspberry Pi allows for real-time LED control.
+- **Persistent Settings:** Enables the user to save custom light presets.
+- **Dockerized Deployment**: The entire application is packaged in a Docker container for easy setup and portability.
 - **Simple Circuit Design**: Utilizes MOSFET transistors for reliable control of the LED strip.
 
 ## Requirements
@@ -21,8 +23,8 @@ This project replaces a lost IR remote for an LED light strip with a modern, sma
 
 ### Software
 
-- Python 3
-- Flask
+- Docker
+- Docker Compose (optional, for managing containers)
 - Raspberry Pi OS (Lite or Desktop)
 
 ## Circuit Design
@@ -46,19 +48,15 @@ Ensure proper connections and double-check the specifications of your MOSFETs to
    ```bash
    sudo apt update && sudo apt upgrade -y
    ```
-
-### 2. Install Dependencies
-
-1. Install Python and pip:
+4. Install Docker:
    ```bash
-   sudo apt install python3 python3-pip -y
+   curl -fsSL https://get.docker.com -o get-docker.sh
+   sh get-docker.sh
+   sudo usermod -aG docker $USER
    ```
-2. Install Flask:
-   ```bash
-   pip3 install flask
-   ```
+   Log out and back in to apply the changes.
 
-### 3. Clone the Repository
+### 2. Clone the Repository
 
 Clone this project to your Raspberry Pi:
 
@@ -67,14 +65,24 @@ git clone https://github.com/your-username/led-strip-controller.git
 cd led-strip-controller
 ```
 
-### 4. Run the Application
+### 3. Build and Run the Docker Container
 
-1. Start the Flask server:
+1. Build the Docker image:
+
    ```bash
-
-   python3 app.py
+   docker build -t led-strip-controller .
    ```
-2. Open a browser on your phone or computer and navigate to:
+
+2. Run the container:
+
+   ```bash
+   docker run -d --name led-strip -p 5000:5000 --privileged led-strip-controller
+   ```
+
+   The `--privileged` flag ensures access to the GPIO pins.
+
+3. Open a browser on your phone or computer and navigate to:
+
    ```
    http://<raspberry-pi-ip>:5000
    ```
@@ -82,6 +90,14 @@ cd led-strip-controller
 ## Usage
 
 1. Access the web interface using your phone or any device connected to the same network.
+
+   Use the sliders and buttons to adjust the LED strip’s color and brightness.
+
+   Customization
+
+   GPIO Pin Configuration: Modify the config.py file to change which GPIO pins control the LED channels.
+
+   UI: Customize the HTML/CSS files in the templates and static folders to enhance the web interfaAccess the web interface using your phone or any device connected to the same network.
 2. Use the sliders and buttons to adjust the LED strip’s color and brightness.
 
 ## Customization
@@ -94,15 +110,3 @@ cd led-strip-controller
 - Add support for animations and effects (e.g., breathing, fading).
 - Integrate with smart home systems like Alexa, Google Home, or Home Assistant.
 - Separating the functionality of the LED into an ESP32 to use as an MQTT client and the Raspberry Pi as a MQTT Broker
-
-## Contributing
-
-Contributions are welcome! Please submit issues and pull requests on the [GitHub repository](https://github.com/your-username/led-strip-controller).
-
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details.
-
----
-
-Feel free to share feedback or suggest new features. Enjoy your smart LED strip controller!
