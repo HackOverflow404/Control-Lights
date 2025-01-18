@@ -21,7 +21,7 @@ This project replaces a lost IR remote for an LED light strip with a modern, sma
 
 ### Software
 
-- Python 3.x
+- Python 3
 - Flask
 - Raspberry Pi OS (Lite or Desktop)
 
@@ -93,7 +93,7 @@ cd led-strip-controller
 
 - Add support for animations and effects (e.g., breathing, fading).
 - Integrate with smart home systems like Alexa, Google Home, or Home Assistant.
-- Add a persistent settings feature to retain the last used configuration.
+- Separating the functionality of the LED into an ESP32 to use as an MQTT client and the Raspberry Pi as a MQTT Broker
 
 ## Contributing
 
