@@ -1,0 +1,151 @@
+body {
+    background-color: #1F1F1F;
+    font-family: sans-serif;
+    margin: 0;
+}
+
+#power-btn {
+    width: 90%;
+    margin: 30px 5% 10px;
+    height: 50px;
+    background-color: #FFFFFF;
+    border-radius: 20px;
+}
+
+.color-control-container {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+}
+
+.color-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+h1, p {
+    color: #FFFFFF
+}
+
+.num-input {
+    width: 3em;
+}
+
+.value-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.slider-input {
+    cursor: pointer;
+    writing-mode: vertical-lr;
+    direction: rtl;
+    width: 16px;
+    height: 200px;
+    border-radius: 50%;
+    vertical-align: bottom;
+}
+
+.slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%; 
+    cursor: pointer;
+}
+
+#red-slider-input::-webkit-slider-thumb {
+    background: #FF5555;
+}
+
+#green-slider-input::-webkit-slider-thumb {
+    background: #55FF55;
+}
+
+#blue-slider-input::-webkit-slider-thumb {
+    background: #5555FF;
+}
+
+.slider-input::-moz-range-thumb {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+#red-slider-input::-moz-range-thumb {
+    background: #FF5555;
+}
+
+#green-slider-input::-moz-range-thumb {
+    background: #55FF55;
+}
+
+#blue-slider-input::-moz-range-thumb {
+    background: #5555FF;
+}
+
+.num-input {
+    width: 3ch;
+    height: 15px;
+    margin-left: 5px;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+.color-view-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 15px;
+}
+
+#produced-color-container {
+    width: 90%;
+    height: 50px;
+    border-radius: 20px;
+}
+
+.options-container {
+    display: flex;
+    flex-direction: row;
+    margin-top: 15px;
+}
+
+.color-option-btn {
+    width: 40%;
+    height: 50px;
+    background-color: #FFFFFF;
+    border-radius: 20px;
+    margin: 0% 5%;
+}
+
+p, input, button {
+    font-size: large;
+}
+
+.presets-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.preset-btn {
+    width: 60px;
+    height: 60px;
+    margin-top: 15px;
+    border-radius: 20px;
+    margin: 10px
+}
+
+.edit-icon {
+    color: #FFFFFF
+}

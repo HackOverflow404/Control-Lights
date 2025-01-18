@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Control</title>
+    <!-- <link rel="stylesheet" href="../static/css/style.css"> -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css')}}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+</head>
+
+<body onload="setInitColor()">
+    <button id="power-btn" onclick="handlePowerOn()">Turn Power On</button>
+    <div class="color-control-container">
+        <div class="red-container color-container">
+            <h1>Red</h1>
+            <input type="range" onchange="handleSliderChange()" value="0" min="0" max="255" orient="vertical"
+                class="red-input slider-input" id="red-slider-input">
+            <div class="red-value-container value-container">
+                <p>Value: </p><input type="number" onchange="handleNumChange()" value="0" min="0" max="255"
+                    name="red-num-input" class="red-input num-input" id="red-num-input">
+            </div>
+        </div>
+        <div class="green-container color-container">
+            <h1>Green</h1>
+            <input type="range" onchange="handleSliderChange()" value="0" min="0" max="255" orient="vertical"
+                class="green-input slider-input" id="green-slider-input">
+            <div class="green-value-container value-container">
+                <p>Value: </p><input type="number" onchange="handleNumChange()" value="0" min="0" max="255"
+                    name="green-num-input" class="green-input num-input" id="green-num-input">
+            </div>
+        </div>
+        <div class="blue-container color-container">
+            <h1>Blue</h1>
+            <input type="range" onchange="handleSliderChange()" value="0" min="0" max="255" orient="vertical"
+                class="blue-input slider-input" id="blue-slider-input">
+            <div class="blue-value-container value-container">
+                <p>Value: </p><input type="number" onchange="handleNumChange()" value="0" min="0" max="255"
+                    name="blue-num-input" class="blue-input num-input" id="blue-num-input">
+            </div>
+        </div>
+    </div>
+    <div class="color-view-container">
+        <p>Produced Color:</p>
+        <span id="produced-color-container"></span>
+    </div>
+    <div class="options-container">
+        <button class="color-option-btn" onclick="handleSetPreset()">Edit Preset Colors</button>
+        <button class="color-option-btn" onclick="handlePrevColor()">Previous Color</button>
+    </div>
+    <div class="presets-container">
+        <button class="preset-btn" id="preset-1-btn" onclick="handlePreset(event)"><i
+                class="edit-icon material-icons">edit</i></button>
+        <button class="preset-btn" id="preset-2-btn" onclick="handlePreset(event)"><i
+                class="edit-icon material-icons">edit</i></button>
+        <button class="preset-btn" id="preset-3-btn" onclick="handlePreset(event)"><i
+                class="edit-icon material-icons">edit</i></button>
+        <button class="preset-btn" id="preset-4-btn" onclick="handlePreset(event)"><i
+                class="edit-icon material-icons">edit</i></button>
+        <button class="preset-btn" id="preset-5-btn" onclick="handlePreset(event)"><i
+                class="edit-icon material-icons">edit</i></button>
+    </div>
+    <script>
+        // Initial states
+        prevColor = [0, 0, 0];
+        beforeOff = [0, 0, 0];
+        presets = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
+        editMode = false;
+        isOn = "{{ data.is_on }}" == "False" ? false : true;
+
+        function setInitColor() { // On page load
+            // Initialize colors as power off
+            red = 0;
+            green = 0;
+            blue = 0;
+            document.getElementById("produced-color-container").style.backgroundColor = `RGB(${red}, ${green}, ${blue})`;
+            
+            // If edit mode is turned off
+            if (!editMode) {
+                // Hide the edit icon
+                Array.from(document.getElementsByClassName("edit-icon")).forEach(element => {
+                    element.style.display = "none";
+                    console.log("set element to hidden");
+                });
+            }
+
+            // Fetch the previous colors and the presets from the json file
+            fetch("{{ url_for('static', filename='assets/data.json')}}")
+                .then((res) => {
+                    if (!res.ok) {
+                        throw new Error(`HTTP error! Status: ${res.status}`);
+                    }
+                    return res.json();
+                })
+                .then((data) => {
+                    prevColor = data["prevColor"];
+                    beforeOff = data["prevColor"];
+                    presets = data["presets"];
+                })
+                .then(() => {
+                    Array.from(document.getElementsByClassName("preset-btn")).forEach((element, i) => {
+                        element.style.backgroundColor = `RGB(${presets[i][0]}, ${presets[i][1]}, ${presets[i][2]})`;
+                    });
+                })
+                .then(() => {
+                    if (isOn) {
+                        red = beforeOff[0];
+                        green = beforeOff[1];
+                        blue = beforeOff[2];
+                        document.getElementById("red-num-input").value = red;
+                        document.getElementById("green-num-input").value = green;
+                        document.getElementById("blue-num-input").value = blue;
+                        document.getElementById("red-slider-input").value = red;
+                        document.getElementById("green-slider-input").value = green;
+                        document.getElementById("blue-slider-input").value = blue;
+                        document.getElementById("produced-color-container").style.backgroundColor = `RGB(${red}, ${green}, ${blue})`;
+                        document.getElementById("power-btn").innerText = "Turn Power Off";
+                    } else {
+                        beforeOff = document.getElementById("produced-color-container").style.backgroundColor.match(/\d+/g).map(Number);
+                        red = 0;
+                        green = 0;
+                        blue = 0;
+                        document.getElementById("red-num-input").value = red;
+                        document.getElementById("green-num-input").value = green;
+                        document.getElementById("blue-num-input").value = blue;
+                        document.getElementById("red-slider-input").value = red;
+                        document.getElementById("green-slider-input").value = green;
+                        document.getElementById("blue-slider-input").value = blue;
+                        document.getElementById("red-num-input").disabled = true;
+                        document.getElementById("green-num-input").disabled = true;
+                        document.getElementById("blue-num-input").disabled = true;
+                        document.getElementById("red-slider-input").disabled = true;
+                        document.getElementById("green-slider-input").disabled = true;
+                        document.getElementById("blue-slider-input").disabled = true;
+                        document.getElementById("produced-color-container").style.backgroundColor = `RGB(${red}, ${green}, ${blue})`;
+                        document.getElementById("power-btn").innerText = "Turn Power On";
+                    }
+                })
+                .catch((error) => { console.error("Unable to fetch data:", error) });
+        }
+
+        function handlePowerOn() {
+            isOn = !isOn;
+            if (isOn) { // If it is being turned on
+                window.location.pathname = "/startup"; // Route to startup to initialize states
+            } else {
+                // Get the current color and save it into a data object
+                currColor = document.getElementById("produced-color-container").style.backgroundColor.match(/\d+/g).map(Number);
+                data = {
+                    "isOn": false,
+                    "currColor": currColor,
+                    "prevColor": currColor,
+                    "presets": presets,
+                };
+
+                // Route to save_data to store data into JSON file
+                fetch("/save_data", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(responseData => {
+                    // Redirects to the shutdown route
+                    if (responseData.redirect) {
+                        window.location.href = responseData.redirect_url;
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                });
+            }
+        }
+        
+        // Function to handle the slider change
+        function handleSliderChange() {
+            // Retrieve the colors and set the previous color
+            prevColor = document.getElementById("produced-color-container").style.backgroundColor.match(/\d+/g).map(Number);
+            red = document.getElementById("red-slider-input").value;
+            green = document.getElementById("green-slider-input").value;
+            blue = document.getElementById("blue-slider-input").value;
+
+            // Set the numerical inputs to the appropriate value
+            document.getElementById("red-num-input").value = red;
+            document.getElementById("green-num-input").value = green;
+            document.getElementById("blue-num-input").value = blue;
+            document.getElementById("produced-color-container").style.backgroundColor = `RGB(${red}, ${green}, ${blue})`;
+
+            handleChangeColor(red, green, blue);
+        }
+
+        // Function to handle a number input change
+        function handleNumChange() {
+            // Retrieve the colors and set the previous color
+            prevColor = document.getElementById("produced-color-container").style.backgroundColor.match(/\d+/g).map(Number);
+            red = document.getElementById("red-num-input").value;
+            green = document.getElementById("green-num-input").value;
+            blue = document.getElementById("blue-num-input").value;
+
+            // Set the numerical inputs to the appropriate value
+            document.getElementById("red-slider-input").value = red;
+            document.getElementById("green-slider-input").value = green;
+            document.getElementById("blue-slider-input").value = blue;
+            document.getElementById("produced-color-container").style.backgroundColor = `RGB(${red}, ${green}, ${blue})`;
+
+            handleChangeColor(red, green, blue);
+        }
+
+        // Function to change the color
+        function handleChangeColor(red, green, blue) {
+            // Generates the JSON object to send in the POST request
+            data = {
+                "red": red,
+                "green": green,
+                "blue": blue,
+            }
+
+            // Runs a fetch request to /control
+            fetch("/control", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        }
+
+        function handleSetPreset() {
+            editMode = !editMode;
+
+            if (!editMode) {
+                Array.from(document.getElementsByClassName("edit-icon")).forEach(element => {
+                    element.style.display = "none";
+                    console.log("set element to hidden");
+                });
+            } else {
+                Array.from(document.getElementsByClassName("edit-icon")).forEach(element => {
+                    element.style.display = "block";
+                    console.log("set element to visible");
+                });
+            }
+        }
+
+        function handlePrevColor() {
+            currColor = document.getElementById("produced-color-container").style.backgroundColor.match(/\d+/g).map(Number);
+            red = prevColor[0];
+            green = prevColor[1];
+            blue = prevColor[2];
+            document.getElementById("red-num-input").value = red;
+            document.getElementById("green-num-input").value = green;
+            document.getElementById("blue-num-input").value = blue;
+            document.getElementById("red-slider-input").value = red;
+            document.getElementById("green-slider-input").value = green;
+            document.getElementById("blue-slider-input").value = blue;
+            document.getElementById("produced-color-container").style.backgroundColor = `RGB(${red}, ${green}, ${blue})`;
+            prevColor = [...currColor];
+            handleChangeColor(red, green, blue);
+        }
+
+        function handlePreset(e) {
+            const button = e.target.closest(".preset-btn");
+            if (!button) {
+                return;
+            }
+            console.log("ID: " + button.id);
+            const i = button.id.split("-")[1] - 1;
+
+            if (editMode) {
+                red = document.getElementById("red-num-input").value;
+                green = document.getElementById("green-num-input").value;
+                blue = document.getElementById("blue-num-input").value;
+                presets[i][0] = Number(red);
+                presets[i][1] = Number(green);
+                presets[i][2] = Number(blue);
+                document.getElementById(button.id).style.backgroundColor = `RGB(${red}, ${green}, ${blue})`;
+            } else {
+                prevColor = document.getElementById("produced-color-container").style.backgroundColor.match(/\d+/g).map(Number);
+                red = presets[i][0];
+                green = presets[i][1];
+                blue = presets[i][2];
+                document.getElementById("red-num-input").value = red;
+                document.getElementById("green-num-input").value = green;
+                document.getElementById("blue-num-input").value = blue;
+                document.getElementById("red-slider-input").value = red;
+                document.getElementById("green-slider-input").value = green;
+                document.getElementById("blue-slider-input").value = blue;
+                document.getElementById("produced-color-container").style.backgroundColor = `RGB(${red}, ${green}, ${blue})`;
+                handleChangeColor(red, green, blue);
+            }
+        }
+    </script>
+</body>
+
+</html>
