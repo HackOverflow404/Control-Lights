@@ -15,6 +15,7 @@ const int PIN_B = 17;
 const int FREQ_HZ  = 5000;
 const int RES_BITS = 8;
 
+// ---------- Espalexa ----------
 Espalexa espalexa;
 
 #if defined(ESP_ARDUINO_VERSION) && (ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3,0,0))
@@ -126,6 +127,8 @@ static void hsvToRgb(uint16_t h, uint8_t s, uint8_t v,
 
 // ========== Espalexa callbacks ==========
 void onColor(uint8_t bri, uint32_t rgb) {
+  Serial.printf("[Alexa] RGB Strip called: bri=%u, rgb=0x%06X\n", bri, rgb);
+  
   if (bri == 0) {
     cycleEnabled = false;
     writeRGB(0, 0, 0);
@@ -148,6 +151,8 @@ void onColor(uint8_t bri, uint32_t rgb) {
 }
 
 void onCycle(uint8_t bri) {
+  Serial.printf("[Alexa] RGB Cycle called: bri=%u\n", bri);
+  
   if (bri == 0) {
     cycleEnabled = false;
     writeRGB(0, 0, 0);
@@ -160,19 +165,34 @@ void onCycle(uint8_t bri) {
 }
 
 void onCycleSpeed(uint8_t bri) {
+  Serial.printf("[Alexa] RGB Speed called: bri=%u\n", bri);
+  
   cycleSpeedPct = (uint8_t)((uint16_t)bri * 100 / 255);
   updateIntervalFromSpeed();
   Serial.printf("[Alexa] RGB Speed set to %u%%\n", cycleSpeedPct);
 }
 
-// ========== Wi-Fi ==========
+// ========== Wi-Fi with improved stability ==========
 void setupWiFi() {
   Serial.printf("[WiFi] Connecting to SSID: \"%s\"...\n", WIFI_SSID);
+  
+  // Ensure clean start
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+  delay(100);
+  
   WiFi.mode(WIFI_STA);
   WiFi.setHostname("esp32-rgb");
-
-  if (WIFI_PASS && strlen(WIFI_PASS) > 0) WiFi.begin(WIFI_SSID, WIFI_PASS);
-  else                                    WiFi.begin(WIFI_SSID);
+  
+  // Additional stability settings
+  WiFi.setSleep(false);
+  WiFi.setAutoReconnect(true);
+  
+  if (WIFI_PASS && strlen(WIFI_PASS) > 0) {
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+  } else {
+    WiFi.begin(WIFI_SSID);
+  }
 
   const unsigned long t0 = millis();
   while (WiFi.status() != WL_CONNECTED) {
@@ -186,7 +206,7 @@ void setupWiFi() {
   Serial.printf("\n[WiFi] ✅ Connected! IP Address: %s\n", WiFi.localIP().toString().c_str());
 }
 
-inline void ensureWiFi() {
+void ensureWiFi() {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println(F("[WiFi] ❌ Lost connection. Reconnecting..."));
     setupWiFi();
@@ -196,36 +216,58 @@ inline void ensureWiFi() {
 // ========== Arduino setup/loop ==========
 void setup() {
   Serial.begin(115200);
-  delay(50);
-  Serial.println(F("\n========== ESP32 RGB Controller =========="));
+  delay(1000); // Longer delay for stability
+  Serial.println(F("\n========== ESP32 RGB Controller with Espalexa =========="));
 
   setupPWM();
   setupWiFi();
   updateIntervalFromSpeed();
 
+  // Small delay before starting Espalexa
+  delay(500);
+  
   Serial.println(F("[Espalexa] Registering Alexa devices..."));
   espalexa.addDevice("RGB Strip",  onColor);
   espalexa.addDevice("RGB Cycle",  onCycle);
   espalexa.addDevice("RGB Speed",  onCycleSpeed);
 
-  espalexa.begin();
+  // Start Espalexa with error handling
+  if (!espalexa.begin()) {
+    Serial.println(F("[Espalexa] ❌ Failed to start Espalexa!"));
+    delay(1000);
+    ESP.restart();
+  }
+  
   Serial.println(F("[Espalexa] ✅ Devices ready. Example commands:"));
   Serial.println(F("   Alexa, set RGB Strip to blue 50%"));
   Serial.println(F("   Alexa, turn on RGB Cycle"));
   Serial.println(F("   Alexa, set RGB Speed to 20% (slower)"));
   Serial.println(F("   Alexa, set RGB Speed to 80% (faster)"));
+  
+  Serial.println(F("\n[System] Ready! Entering main loop..."));
 }
 
 void loop() {
-  espalexa.loop();
+  // Handle Espalexa with error protection
+  static unsigned long lastEspalexaError = 0;
+  try {
+    espalexa.loop();
+  } catch (...) {
+    if (millis() - lastEspalexaError > 5000) {
+      Serial.println(F("[Espalexa] ⚠️  Loop error, continuing..."));
+      lastEspalexaError = millis();
+    }
+  }
 
+  // WiFi check with reduced frequency
   static unsigned long lastWiFiCheck = 0;
   const unsigned long now = millis();
-  if (now - lastWiFiCheck >= 5000UL) {
+  if (now - lastWiFiCheck >= 10000UL) { // Check every 10 seconds instead of 5
     lastWiFiCheck = now;
     ensureWiFi();
   }
 
+  // Color cycling
   if (cycleEnabled && (uint32_t)(now - lastStepMs) >= stepIntervalMs) {
     lastStepMs = now;
 
@@ -235,7 +277,8 @@ void loop() {
     uint8_t r, g, b;
     hsvToRgb(cycleHue, 255, cycleBri, r, g, b);
     writeRGB(r, g, b);
-
-    Serial.printf("[Cycle] Hue=%3u → RGB(%3u,%3u,%3u)\n", cycleHue, r, g, b);
   }
+  
+  // Small delay to prevent watchdog issues
+  yield();
 }
